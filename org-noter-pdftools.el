@@ -216,7 +216,7 @@ To use this, `org-noter-pdftools-use-org-id' has to be t."
            (pdf-info-getannot annot-id)
            t))
       (if heading
-          (org-noter-pdftools-occur-goto-heading heading page)))
+          (org-pdftools-occur-goto-heading heading page)))
     t))
 
 (defun org-noter-pdftools--note-after-tipping-point (point location view)
@@ -424,54 +424,6 @@ To use this, `org-noter-pdftools-use-org-id' has to be t."
                              (outline-show-branches)
                              (org-noter-sync-current-note))
            nil))))))
-
-(defun org-noter-pdftools-occur-goto-heading (heading page)
-  (pdf-info-make-local-server nil nil)
-  (setq org-noter-pdf-tools-occur-match-list '())
-  (let* ((documents (pdf-occur-normalize-documents
-                     (list (org-noter--with-valid-session
-                            (org-noter--session-doc-buffer session)))))
-         (batches (pdf-occur-create-batches
-                   documents (or pdf-occur-search-batch-size 1)))
-         (case-fold-search 't)
-         (heading-text (replace-regexp-in-string "^[0-9]+\\(\.[0-9]+\\)? +" "" heading))
-         (heading-text-regex (concat heading-text "$")))
-    (pdf-info-local-batch-query
-     (lambda (document pages)
-       (pdf-info-search-regexp heading-text-regex pages nil document))
-     (lambda (status response document pages)
-       (if status
-           (error "%s" response)
-         (let ((matches
-                (-remove (lambda (m) (not (eq page (cdr (assoc 'page m))))) response)))
-           (if org-noter-pdf-tools-occur-match-list
-               (nconc org-noter-pdf-tools-occur-match-list matches)
-             (setq org-noter-pdf-tools-occur-match-list matches)))))
-     (lambda (status buffer)
-       (when (buffer-live-p buffer)
-         (with-current-buffer buffer
-           (when org-noter-pdf-tools-occur-match-list
-             (setq-local exact-match nil)
-             (if (eq 1 (length org-noter-pdf-tools-occur-match-list))
-                 (setq-local exact-match (car org-noter-pdf-tools-occur-match-list))
-               (let ((exact-matches
-                      (-remove (lambda (em)
-                                 (not (or
-                                       (equal heading (cdr (assoc 'text em)))
-                                       (equal heading-text (cdr (assoc 'text em))))))
-                               org-noter-pdf-tools-occur-match-list)))
-                 (if (eq 1 (length exact-matches))
-                     (setq-local exact-match (car exact-matches)))))
-             (when exact-match
-               (setq-local matching-edge (cdr (assoc 'edges exact-match)))
-               (pdf-view-goto-page page)
-               (let ((pixel-match
-                      (pdf-util-scale-relative-to-pixel matching-edge))
-                     (pdf-isearch-batch-mode t))
-                 (pdf-isearch-hl-matches pixel-match nil t)
-                 (pdf-isearch-focus-match-batch pixel-match))
-               t)))))
-     batches)))
 
 ;; TODO(nox): Implement interface for skeleton creation
 (defun org-noter-pdftools-create-skeleton ()

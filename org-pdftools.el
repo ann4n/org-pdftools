@@ -114,6 +114,10 @@ Can be one of highlight/underline/strikeout/squiggly."
   "Opacity for free pointer annotations."
   :group 'org-pdftools
   :type 'float)
+(defcustom org-pdftools-occur-list nil
+  "The asynchronized occur list."
+  :group 'org-pdftools
+  :type 'list)
 
 
 ;; pdf://path::page++height_percent;;annot_id??isearch_string or @@occur_search_string
@@ -206,13 +210,10 @@ Can be one of highlight/underline/strikeout/squiggly."
                    (org-noter--with-valid-session
                     (with-selected-window
                         (org-noter--get-doc-window)
-                      (isearch-mode t)
-                      (let (pdf-isearch-narrow-to-page t)
-                        (isearch-yank-string search-string))
-                      ))
-                 (isearch-mode t)
-                 (let (pdf-isearch-narrow-to-page t)
-                   (isearch-yank-string search-string))))))
+                      ;; (isearch-mode t)
+                      ;; (let (pdf-isearch-narrow-to-page t)
+                      ;;   (isearch-yank-string search-string))
+                      (org-pdftools-occur-goto-heading search-string page)))))))
           ((string-match
             "\\(.*\\)@@\\(.*\\)"
             link)
@@ -223,6 +224,54 @@ Can be one of highlight/underline/strikeout/squiggly."
               pathlist
               occur-search-string)))
           ((org-open-file link 1)))))
+
+(defun org-pdftools-occur-goto-heading (heading page)
+  (pdf-info-make-local-server nil nil)
+  (setq org-pdftools-occur-list '())
+  (let* ((documents (pdf-occur-normalize-documents
+                     (list (org-noter--with-valid-session
+                            (org-noter--session-doc-buffer session)))))
+         (batches (pdf-occur-create-batches
+                   documents (or pdf-occur-search-batch-size 1)))
+         (case-fold-search 't)
+         (heading-text (replace-regexp-in-string "^[0-9]+\\(\.[0-9]+\\)? +" "" heading))
+         (heading-text-regex (concat heading-text "$")))
+    (pdf-info-local-batch-query
+     (lambda (document pages)
+       (pdf-info-search-regexp heading-text-regex pages nil document))
+     (lambda (status response document pages)
+       (if status
+           (error "%s" response)
+         (let ((matches
+                (-remove (lambda (m) (not (eq page (cdr (assoc 'page m))))) response)))
+           (if org-pdftools-occur-list
+               (nconc org-pdftools-occur-list matches)
+             (setq org-pdftools-occur-list matches)))))
+     (lambda (status buffer)
+       (when (buffer-live-p buffer)
+         (with-current-buffer buffer
+           (when org-pdftools-occur-list
+             (setq-local exact-match nil)
+             (if (eq 1 (length org-pdftools-occur-list))
+                 (setq-local exact-match (car org-pdftools-occur-list))
+               (let ((exact-matches
+                      (-remove (lambda (em)
+                                 (not (or
+                                       (equal heading (cdr (assoc 'text em)))
+                                       (equal heading-text (cdr (assoc 'text em))))))
+                               org-pdftools-occur-list)))
+                 (if (eq 1 (length exact-matches))
+                     (setq-local exact-match (car exact-matches)))))
+             (when exact-match
+               (setq-local matching-edge (cdr (assoc 'edges exact-match)))
+               (pdf-view-goto-page page)
+               (let ((pixel-match
+                      (pdf-util-scale-relative-to-pixel matching-edge))
+                     (pdf-isearch-batch-mode t))
+                 (pdf-isearch-hl-matches pixel-match nil t)
+                 (pdf-isearch-focus-match-batch pixel-match))
+               t)))))
+     batches)))
 
 (defun org-pdftools-get-link ()
   "Get link from the active pdf buffer."
