@@ -184,7 +184,7 @@ To use this, `org-noter-pdftools-use-org-id' has to be t."
          (concat "[["
                  (org-noter-pdftools--location-original-property loc)
                  "]]"))
-    nil)))
+     nil)))
 
 (defun org-noter-pdftools--convert-to-location-cons (location)
   "Function for converting the LOCATION link to cons."
@@ -195,20 +195,28 @@ To use this, `org-noter-pdftools-use-org-id' has to be t."
                  (org-noter-pdftools--parse-link location))))
       (org-noter-pdftools--location-link-to-cons loc))))
 
-(defun org-noter-pdftools--doc-goto-location (mode location)
+(defun org-noter-pdftools--doc-goto-location
+    (mode location)
   "Goto LOCATION in the corresponding MODE."
-  (when (and (eq mode 'pdf-view-mode) (org-noter-pdftools--location-p location))
-    (when (org-noter-pdftools--location-page location)
-      (pdf-view-goto-page (org-noter-pdftools--location-page location)))
-    (when (org-noter-pdftools--location-height location)
-      (image-set-window-vscroll
-       (round (/ (* (org-noter-pdftools--location-height location) (cdr (pdf-view-image-size)))
-                 (frame-char-height)))))
-    (when (org-noter-pdftools--location-annot-id location)
-      (pdf-annot-show-annotation (pdf-info-getannot (org-noter-pdftools--location-annot-id location)) t))
-    (when (org-noter-pdftools--location-search-string location)
-      (isearch-mode t)
-      (isearch-yank-string (org-noter-pdftools--location-search-string location)))
+  (when
+      (and
+       (eq mode 'pdf-view-mode)
+       (org-noter-pdftools--location-p location))
+    (let
+        ((page
+          (org-noter-pdftools--location-page location))
+         (annot-id
+          (org-noter-pdftools--location-annot-id location))
+         (heading
+          (org-noter-pdftools--location-search-string location)))
+      (if page
+          (pdf-view-goto-page page))
+      (if annot-id
+          (pdf-annot-show-annotation
+           (pdf-info-getannot annot-id)
+           t))
+      (if heading
+          (org-noter-pdftools-occur-goto-heading heading page)))
     t))
 
 (defun org-noter-pdftools--note-after-tipping-point (point location view)
@@ -266,16 +274,16 @@ To use this, `org-noter-pdftools-use-org-id' has to be t."
                                    id)
                                 id)))))))))
 
-(dolist (pair '((org-noter--check-location-property-hook   . org-noter-pdftools--check-link)
-                (org-noter--parse-location-property-hook   . org-noter-pdftools--parse-link)
-                (org-noter--pretty-print-location-hook     . org-noter-pdftools--pretty-print-location)
-                (org-noter--convert-to-location-cons-hook  . org-noter-pdftools--convert-to-location-cons)
-                (org-noter--doc-goto-location-hook         . org-noter-pdftools--doc-goto-location)
-                (org-noter--note-after-tipping-point-hook  . org-noter-pdftools--note-after-tipping-point)
+(dolist (pair '((org-noter--check-location-property-hook . org-noter-pdftools--check-link)
+                (org-noter--parse-location-property-hook . org-noter-pdftools--parse-link)
+                (org-noter--pretty-print-location-hook . org-noter-pdftools--pretty-print-location)
+                (org-noter--convert-to-location-cons-hook . org-noter-pdftools--convert-to-location-cons)
+                (org-noter--doc-goto-location-hook . org-noter-pdftools--doc-goto-location)
+                (org-noter--note-after-tipping-point-hook . org-noter-pdftools--note-after-tipping-point)
                 (org-noter--relative-position-to-view-hook . org-noter-pdftools--relative-position-to-view)
-                (org-noter--get-precise-info-hook          . org-noter-pdftools--get-precise-info)
-                (org-noter--doc-approx-location-hook       . org-noter-pdftools--doc-approx-location)
-                (org-noter-insert-heading-hook             . org-noter-pdftools--insert-heading)))
+                (org-noter--get-precise-info-hook . org-noter-pdftools--get-precise-info)
+                (org-noter--doc-approx-location-hook . org-noter-pdftools--doc-approx-location)
+                (org-noter-insert-heading-hook . org-noter-pdftools--insert-heading)))
   (add-hook (car pair) (cdr pair)))
 
 ;; --------------------------------------------------------------------------------
@@ -402,18 +410,68 @@ To use this, `org-noter-pdftools-use-org-id' has to be t."
   (unless org-noter-pdftools-use-org-id
     "You have to enable `org-noter-pdftools-use-org-id'!")
   (org-noter--with-valid-session
-   (pdf-annot-show-annotation a t)
    (let ((id (symbol-name
               (pdf-annot-get-id a))))
-     (select-window
-      (org-noter--get-notes-window))
-     (let ((exist-id (org-id-find-id-in-file
-                      (if org-noter-pdftools-use-unique-org-id
-                          (concat (org-noter--session-property-text session) "-" id)
-                        id)
-                      buffer-file-name)))
-       (if exist-id (goto-char (cdr exist-id))
-         nil)))))
+     ;; (select-window
+     ;;  (org-noter--get-notes-window 'force))
+     (with-selected-window (org-noter--get-notes-window)
+       (let ((exist-id (org-id-find-id-in-file
+                        (if org-noter-pdftools-use-unique-org-id
+                            (concat (org-noter--session-property-text session) "-" id)
+                          id)
+                        buffer-file-name)))
+         (if exist-id (progn (goto-char (cdr exist-id))
+                             (outline-show-branches)
+                             (org-noter-sync-current-note))
+           nil))))))
+
+(defun org-noter-pdftools-occur-goto-heading (heading page)
+  (pdf-info-make-local-server nil nil)
+  (setq org-noter-pdf-tools-occur-match-list '())
+  (let* ((documents (pdf-occur-normalize-documents
+                     (list (org-noter--with-valid-session
+                            (org-noter--session-doc-buffer session)))))
+         (batches (pdf-occur-create-batches
+                   documents (or pdf-occur-search-batch-size 1)))
+         (case-fold-search 't)
+         (heading-text (replace-regexp-in-string "^[0-9]+\\(\.[0-9]+\\)? +" "" heading))
+         (heading-text-regex (concat heading-text "$")))
+    (pdf-info-local-batch-query
+     (lambda (document pages)
+       (pdf-info-search-regexp heading-text-regex pages nil document))
+     (lambda (status response document pages)
+       (if status
+           (error "%s" response)
+         (let ((matches
+                (-remove (lambda (m) (not (eq page (cdr (assoc 'page m))))) response)))
+           (if org-noter-pdf-tools-occur-match-list
+               (nconc org-noter-pdf-tools-occur-match-list matches)
+             (setq org-noter-pdf-tools-occur-match-list matches)))))
+     (lambda (status buffer)
+       (when (buffer-live-p buffer)
+         (with-current-buffer buffer
+           (when org-noter-pdf-tools-occur-match-list
+             (setq-local exact-match nil)
+             (if (eq 1 (length org-noter-pdf-tools-occur-match-list))
+                 (setq-local exact-match (car org-noter-pdf-tools-occur-match-list))
+               (let ((exact-matches
+                      (-remove (lambda (em)
+                                 (not (or
+                                       (equal heading (cdr (assoc 'text em)))
+                                       (equal heading-text (cdr (assoc 'text em))))))
+                               org-noter-pdf-tools-occur-match-list)))
+                 (if (eq 1 (length exact-matches))
+                     (setq-local exact-match (car exact-matches)))))
+             (when exact-match
+               (setq-local matching-edge (cdr (assoc 'edges exact-match)))
+               (pdf-view-goto-page page)
+               (let ((pixel-match
+                      (pdf-util-scale-relative-to-pixel matching-edge))
+                     (pdf-isearch-batch-mode t))
+                 (pdf-isearch-hl-matches pixel-match nil t)
+                 (pdf-isearch-focus-match-batch pixel-match))
+               t)))))
+     batches)))
 
 ;; TODO(nox): Implement interface for skeleton creation
 (defun org-noter-pdftools-create-skeleton ()
@@ -622,11 +680,11 @@ Only available with PDF Tools."
 
                (when (car contents)
                  (when org-noter-pdftools-insert-content-heading
-                    (org-noter--insert-heading (1+ level) "Contents"))
+                   (org-noter--insert-heading (1+ level) "Contents"))
                  (insert (car contents)))
                (when (cdr contents)
                  (when org-noter-pdftools-insert-comment-heading
-                     (org-noter--insert-heading (1+ level) "Comment"))
+                   (org-noter--insert-heading (1+ level) "Comment"))
                  (insert (cdr contents)))))
 
            (setq ast (org-noter--parse-root))
@@ -636,6 +694,46 @@ Only available with PDF Tools."
            (org-show-children 2)))))
 
     (t (error "This command is only supported on PDF Tools")))))
+
+(defun org-noter-pdftools-insert-precise-note (&optional toggle-no-questions)
+  (interactive "P")
+  (org-noter--with-valid-session
+   (let ((org-noter-insert-note-no-questions
+          (if toggle-no-questions
+              (not org-noter-insert-note-no-questions)
+            org-noter-insert-note-no-questions))
+         (org-pdftools-use-isearch-link t)
+         (org-pdftools-use-freepointer-annot t))
+     (org-noter-insert-note (org-noter--get-precise-info)))))
+
+
+(defun org-noter-pdftools-activate-org-note
+    ()
+  (interactive)
+  (org-noter--with-valid-session
+   (unless
+       (equal
+        (selected-window)
+        (org-noter--get-notes-window))
+     (error "You should use this command in an org-noter note buffer"))
+   (let*
+       ((org-id
+         (org-id-get)))
+     (unless
+         (and
+          (string-match ".*\\(annot-.*-.*\\)" org-id)
+          org-noter-pdftools-use-org-id
+          org-noter-pdftools-use-pdftools-link-location)
+       (error "This can only be run on an org heading with a valid org-pdftools annotation ID.
+Please also make sure `org-noter-pdftools-use-org-id' and `org-noter-pdftools-use-pdftools-link-location' are enabled"))
+     (let*
+         ((annot-id
+           (match-string 1 org-id))
+          note)
+       (select-window
+        (org-noter--get-doc-window))
+       (pdf-annot-default-activate-handler
+        (pdf-annot-getannot annot-id))))))
 
 (defun org-noter-pdftools-embed-org-note-to-pdf ()
   "Embed a org subtree to its corresponding PDF annotation."
@@ -652,7 +750,7 @@ Please also make sure `org-noter-pdftools-use-org-id' and `org-noter-pdftools-us
      (let* ((annot-id (match-string 1 org-id))
             note)
        (setq kr kill-ring)
-       (org-copy-subtree nil nil nil t)
+       (org-copy-subtree)
        (setq note (car kill-ring))
        (setq kill-ring kr)
        (with-selected-window
@@ -660,8 +758,11 @@ Please also make sure `org-noter-pdftools-use-org-id' and `org-noter-pdftools-us
          (let ((annot (pdf-annot-getannot (intern annot-id))))
            (with-current-buffer (pdf-annot-edit-contents-noselect annot)
              (insert note)
-             (pdf-annot-edit-contents-finalize t)))
-         (save-buffer))))))
+             (pdf-annot-edit-contents-finalize t)
+             (save-buffer))))
+       (select-window (org-noter--get-doc-window))
+       (pdf-annot-default-activate-handler (pdf-annot-getannot annot-id))))))
+
 (defun org-noter-pdftools-embed-all-org-note-to-pdf ()
   (interactive)
   (org-noter--with-valid-session
@@ -673,10 +774,10 @@ Please also make sure `org-noter-pdftools-use-org-id' and `org-noter-pdftools-us
   (interactive)
   (org-noter--with-valid-session
    (let* ((note (with-selected-window (org-noter--get-notes-window)
-                 (save-excursion
-                   (buffer-substring-no-properties
-                    (point-min) (point-max)))))
-         annot-id)
+                  (save-excursion
+                    (buffer-substring-no-properties
+                     (point-min) (point-max)))))
+          annot-id)
      (with-selected-window
          (org-noter--get-doc-window)
        (save-excursion

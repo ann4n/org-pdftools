@@ -52,11 +52,11 @@ See `org-pdftools-get-desc-default' as an example."
   :group 'org-pdftools
   :type 'function)
 (defcustom org-pdftools-path-generator #'abbreviate-file-name
-"Translate your PDF file path the way you like. Take buffer-file-name as the argument."
+  "Translate your PDF file path the way you like. Take buffer-file-name as the argument."
   :group 'org-pdftools
   :type 'function)
 (defcustom org-pdftools-path-resolver #'expand-file-name
-"Resolve your translated PDF file path back to an absolute path."
+  "Resolve your translated PDF file path back to an absolute path."
   :group 'org-pdftools
   :type 'function)
 (defcustom org-pdftools-open-custom-open nil
@@ -209,7 +209,7 @@ Can be one of highlight/underline/strikeout/squiggly."
                       (isearch-mode t)
                       (let (pdf-isearch-narrow-to-page t)
                         (isearch-yank-string search-string))
-                        ))
+                      ))
                  (isearch-mode t)
                  (let (pdf-isearch-narrow-to-page t)
                    (isearch-yank-string search-string))))))
@@ -228,7 +228,7 @@ Can be one of highlight/underline/strikeout/squiggly."
   "Get link from the active pdf buffer."
   (let* ((path
           (with-current-buffer (current-buffer)
-              (funcall org-pdftools-path-generator (buffer-file-name))))
+            (funcall org-pdftools-path-generator (buffer-file-name))))
          (page (pdf-view-current-page))
          (annot-id (if (pdf-view-active-region-p)
                        (pdf-annot-get-id
@@ -344,10 +344,10 @@ Can be one of highlight/underline/strikeout/squiggly."
             :description desc)))
         ((eq major-mode 'pdf-occur-buffer-mode)
          (let* ((paths (mapconcat #'identity (mapcar #'car
-                         pdf-occur-search-documents) "%&%"))
+                                                     pdf-occur-search-documents) "%&%"))
                 (occur-search-string pdf-occur-search-string)
                 (link (concat org-pdftools-link-prefix ":"
-                       paths "@@" occur-search-string)))
+                              paths "@@" occur-search-string)))
            (org-link-store-props
             :type org-pdftools-link-prefix
             :link link
@@ -418,7 +418,7 @@ and append it. ARG is passed to `org-link-complete-file'."
                     predicate)
             (funcall current-read-file-name-function
                      prompt dir default-filename mustmatch initial
-                     pdf-or-dir-p))))                     
+                     pdf-or-dir-p))))
     (concat
      (replace-regexp-in-string
       "^file:"
@@ -428,6 +428,23 @@ and append it. ARG is passed to `org-link-complete-file'."
      (read-from-minibuffer
       "Page:"
       "1"))))
+
+;; (defun org-noter-set-start-location (&optional arg)
+;;   "When opening a session with this document, go to the current location.
+;; With a prefix ARG, remove start location."
+;;   (interactive "P")
+;;   (org-noter--with-valid-session
+;;    (let ((inhibit-read-only t)
+;;          (ast (org-noter--parse-root))
+;;          (location (org-noter--doc-approx-location (when (called-interactively-p 'any) 'interactive))))
+;;      (with-current-buffer (org-noter--session-notes-buffer session)
+;;        (org-with-wide-buffer
+;;         (goto-char (org-element-property :begin ast))
+;;         (if arg
+;;             (org-entry-delete nil org-noter-property-note-location)
+;;           (org-entry-put nil org-noter-property-note-location
+;;                          (org-noter--pretty-print-location location))))))))
+
 
 (provide 'org-pdftools)
 ;;; org-pdftools.el ends here
