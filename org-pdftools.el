@@ -74,6 +74,12 @@ See `org-pdftools-get-desc-default' as an example."
   :group 'org-pdftools
   :type 'boolean)
 
+(defcustom org-pdftools-use-occur-link 't
+  "Whether prompt to use isearch link or not. "
+  :group 'org-pdftools
+  :type 'boolean)
+
+
 (defcustom org-pdftools-export-style 'pdftools
   "Export style of org-pdftools links.
 - pdftools :: export the link as is
@@ -118,7 +124,10 @@ Can be one of highlight/underline/strikeout/squiggly."
   "The asynchronized occur list."
   :group 'org-pdftools
   :type 'list)
-
+(defcustom org-pdftools-occur-string nil
+  "The asynchronized occur list."
+  :group 'org-pdftools
+  :type 'string)
 
 ;; pdf://path::page++height_percent;;annot_id??isearch_string or @@occur_search_string
 (defun org-pdftools-open-pdftools (link)
@@ -228,6 +237,7 @@ Can be one of highlight/underline/strikeout/squiggly."
 (defun org-pdftools-occur-goto-heading (heading page)
   (pdf-info-make-local-server nil nil)
   (setq org-pdftools-occur-list '())
+  (setq org-pdftools-occur-string heading)
   (let* ((documents (pdf-occur-normalize-documents
                      (list (org-noter--with-valid-session
                             (org-noter--session-doc-buffer session)))))
@@ -330,8 +340,8 @@ Can be one of highlight/underline/strikeout/squiggly."
                           (cdr (pdf-view-image-size)))))))
          ;; pdf://path::page++height_percent;;annot_id\\|??search-string
          (search-string (if (and (not annot-id)
-                                 org-pdftools-use-isearch-link)
-                            isearch-string
+                                 org-pdftools-use-occur-link)
+                            org-pdftools-occur-string
                           ""))
          (link (concat
 
@@ -352,8 +362,7 @@ Can be one of highlight/underline/strikeout/squiggly."
                         " "
                         "%20"
                         search-string))
-                    (message
-                     "   Reminder: You haven't performed a isearch!") "")))))
+                    "")))))
     link))
 
 (defun org-pdftools-get-desc-default (file page &optional text)
