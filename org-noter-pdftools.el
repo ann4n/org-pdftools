@@ -658,6 +658,25 @@ Only available with PDF Tools."
          (org-pdftools-use-freepointer-annot t))
      (org-noter-insert-note (org-noter--get-precise-info)))))
 
+(defun org-noter-pdftools-insert-precise-note-underline ()
+  (interactive)
+  (setq  org-noter-pdftools-markup-pointer-color "#228b22"
+         org-noter-pdftools-markup-pointer-function 'pdf-annot-add-underline-markup-annotation)
+  (org-noter--with-valid-session
+   (let ((org-noter-insert-note-no-questions 't)
+         (org-pdftools-use-freepointer-annot 't))
+     (org-noter-insert-note (org-noter--get-precise-info)))))
+
+
+(defun org-noter-pdftools-insert-precise-note-squiggly ()
+  (interactive)
+  (setq  org-noter-pdftools-markup-pointer-color "#ffa500"
+         org-noter-pdftools-markup-pointer-function 'pdf-annot-add-squiggly-markup-annotation)
+  (org-noter--with-valid-session
+   (let ((org-noter-insert-note-no-questions 't)
+         (org-pdftools-use-freepointer-annot 't))
+     (org-noter-insert-note (org-noter--get-precise-info)))))
+
 
 (defun org-noter-pdftools-activate-org-note
     ()
