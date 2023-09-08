@@ -663,37 +663,25 @@ Only available with PDF Tools."
   (interactive)
   (setq  org-noter-pdftools-markup-pointer-color "#d3d3d3"
          org-noter-pdftools-markup-pointer-function 'pdf-annot-add-highlight-markup-annotation)
-  (org-noter--with-valid-session
-   (let ((org-noter-insert-note-no-questions 't)
-         (org-pdftools-use-freepointer-annot 't))
-     (org-noter-insert-note (org-noter--get-precise-info)))))
+  (org-noter-pdftools-insert-precise-note))
 
 (defun org-noter-pdftools-insert-precise-note-squiggly ()
   (interactive)
   (setq  org-noter-pdftools-markup-pointer-color "#ffa500"
          org-noter-pdftools-markup-pointer-function 'pdf-annot-add-squiggly-markup-annotation)
-  (org-noter--with-valid-session
-   (let ((org-noter-insert-note-no-questions 't)
-         (org-pdftools-use-freepointer-annot 't))
-     (org-noter-insert-note (org-noter--get-precise-info)))))
+  (org-noter-insert-precise-note))
 
 (defun org-noter-pdftools-insert-precise-note-strikeout ()
   (interactive)
   (setq  org-noter-pdftools-markup-pointer-color "#ff0000"
          org-noter-pdftools-markup-pointer-function 'pdf-annot-add-strikeout-markup-annotation)
-  (org-noter--with-valid-session
-   (let ((org-noter-insert-note-no-questions 't)
-         (org-pdftools-use-freepointer-annot 't))
-     (org-noter-insert-note (org-noter--get-precise-info)))))
+  (org-noter-insert-precise-note))
 
 (defun org-noter-pdftools-insert-precise-note-underline ()
   (interactive)
   (setq  org-noter-pdftools-markup-pointer-color "#228b22"
          org-noter-pdftools-markup-pointer-function 'pdf-annot-add-underline-markup-annotation)
-  (org-noter--with-valid-session
-   (let ((org-noter-insert-note-no-questions 't)
-         (org-pdftools-use-freepointer-annot 't))
-     (org-noter-insert-note (org-noter--get-precise-info)))))
+  (org-noter-insert-precise-note))
 
 
 (defun org-noter-pdftools-activate-org-note ()
