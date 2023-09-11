@@ -661,14 +661,16 @@ Only available with PDF Tools."
 
 (defun org-noter-pdftools-insert-precise-note-highlight ()
   (interactive)
-  (setq  org-noter-pdftools-markup-pointer-color "#d3d3d3"
-         org-noter-pdftools-markup-pointer-function 'pdf-annot-add-highlight-markup-annotation)
-  (org-noter-pdftools-insert-precise-note))
+  (setq org-noter-pdftools-markup-pointer-color "#d3d3d3"
+        org-noter-pdftools-markup-pointer-function 'pdf-annot-add-highlight-markup-annotation
+        org-noter-insert-note-no-questions t)
+  (org-noter-insert-precise-note))
 
 (defun org-noter-pdftools-insert-precise-note-squiggly ()
   (interactive)
-  (setq  org-noter-pdftools-markup-pointer-color "#ffa500"
-         org-noter-pdftools-markup-pointer-function 'pdf-annot-add-squiggly-markup-annotation)
+  (setq org-noter-pdftools-markup-pointer-color "#ffa500"
+        org-noter-pdftools-markup-pointer-function 'pdf-annot-add-squiggly-markup-annotation
+        org-noter-insert-note-no-questions t)
   (org-noter-insert-precise-note))
 
 (defun org-noter-pdftools-insert-precise-note-strikeout ()
