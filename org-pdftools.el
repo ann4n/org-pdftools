@@ -2,9 +2,9 @@
 ;; Copyright (C) 2020 Alexander Fu Xi
 
 ;; Author: Alexander Fu Xi <fuxialexander@gmail.com>
-;; Maintainer: Alexander Fu Xi <fuxialexnader@gmail.com>
-;; Homepage: https://github.com/fuxialexander/org-pdftools
-;; Version: 1.0
+;; Maintainer: Yayu Wang <st.saint.wyy@gmail.com>
+;; Homepage: https://github.com/st-saint/org-pdftools
+;; Version: 1.1
 ;; Keywords: convenience
 ;; Package-Requires: ((emacs "26.1") (org "9.3.6") (pdf-tools "0.8") (org-noter "1.4.1"))
 
