@@ -4,7 +4,7 @@
 ;; Author: Alexander Fu Xi <fuxialexander@gmail.com>
 ;; Maintainer: Yayu Wang <st.saint.wyy@gmail.com>
 ;; Homepage: https://github.com/st-saint/org-pdftools
-;; Version: 1.2
+;; Version: 1.3
 ;; Keywords: convenience
 
 ;; This program is free software; you can redistribute it and/or modify
