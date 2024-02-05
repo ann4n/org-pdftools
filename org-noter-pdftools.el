@@ -659,9 +659,25 @@ Only available with PDF Tools."
          (org-pdftools-use-freepointer-annot t))
      (org-noter-insert-note (org-noter--get-precise-info)))))
 
-(defun org-noter-pdftools-insert-precise-note-highlight ()
+(defun org-noter-pdftools-insert-precise-note-highlight (&optional read-color-t)
   (interactive)
-  (setq org-noter-pdftools-markup-pointer-color "#d3d3d3"
+  (org-noter--with-valid-session
+   (setq org-noter-pdftools-markup-pointer-color (if read-color-t (read-color) "#d3d3d3")
+         org-noter-pdftools-markup-pointer-function 'pdf-annot-add-highlight-markup-annotation
+         org-noter-insert-note-no-questions t)
+   (org-noter-insert-precise-note)))
+
+
+(defun org-noter-pdftools-insert-precise-note-keyunderstand ()
+  (interactive)
+  (setq org-noter-pdftools-markup-pointer-color "#6ce964"
+        org-noter-pdftools-markup-pointer-function 'pdf-annot-add-highlight-markup-annotation
+        org-noter-insert-note-no-questions t)
+  (org-noter-insert-precise-note))
+
+(defun org-noter-pdftools-insert-precise-note-rectangle ()
+  (interactive)
+  (setq org-noter-pdftools-markup-pointer-color "#cce0f8"
         org-noter-pdftools-markup-pointer-function 'pdf-annot-add-highlight-markup-annotation
         org-noter-insert-note-no-questions t)
   (org-noter-insert-precise-note))
@@ -713,8 +729,8 @@ Please also make sure `org-noter-pdftools-use-org-id' and `org-noter-pdftools-us
        (pdf-annot-activate-annotation
         (pdf-annot-getannot annot-id))
        (pdf-annot-default-activate-handler
-        (pdf-annot-getannot annot-id))
-       ))))
+        (pdf-annot-getannot annot-id))))))
+
 
 (defun org-noter-pdftools-embed-org-note-to-pdf ()
   "Embed a org subtree to its corresponding PDF annotation."

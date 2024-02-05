@@ -390,7 +390,7 @@ Can be one of highlight/underline/strikeout/squiggly."
          (let* ((file (file-name-base (pdf-view-buffer-file-name)))
                 (quot (if (pdf-view-active-region-p)
                           (replace-regexp-in-string "\n" " "
-                                                    (mapconcat 'identity (pdf-view-active-region-text) ? ))))
+                                                    (mapconcat 'identity (pdf-view-active-region-text) ?))))
                 (page (number-to-string (pdf-view-current-page)))
                 (link (org-pdftools-get-link))
                 (isearchstr (if (string-match (concat ".*" (regexp-quote org-pdftools-search-string-separator) "\\(.*\\)") link)
